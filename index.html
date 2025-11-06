@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Intenciones Parroquiales</title>
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <!-- Animate On Scroll Library -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <!-- Estilos personalizados -->
+  <?!= include('styles'); ?>
+</head>
+<body>
+
+  <!-- Barra de Navegación -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-book-half me-2" viewBox="0 0 16 16"><path d="M8.5 2.687c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388 1.175.885.652 1.453 1.575 1.453 2.593v3.234c0 .53-.223.96-.672 1.282-.51.353-1.165.547-1.84.547-.723 0-1.356-.206-1.838-.568-.48-.363-.78-.857-.78-1.428V9.347c0-.528.22-1.002.624-1.34.42-.355 1.02-.557 1.668-.557.56 0 1.08.17 1.488.473.18.133.35.298.5.492V6.202c-.17-.18-.358-.354-.565-.515-.27-.208-.62-.39-1.028-.538-1.325-.49-2.952-.39-4.03.391V2.687zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.517-.953.846-1.29 2.176-1.29 3.34V14a.5.5 0 0 0 .5.5h6.79a.5.5 0 0 0 .447-.276l.531-1.292a.5.5 0 0 0-.14- .569l-.63- .493a1 1 0 0 1-.227-1.342l.63-.493a.5.5 0 0 0 .14-.569l-.53-1.292a.5.5 0 0 0-.447-.276H2.5a.5.5 0 0 1-.5-.5V6.735c0-.92.22-1.79.622-2.5.424-.747 1.02-1.355 1.732-1.806C5.214 1.83 6.56 1.475 8 1.783z"/></svg>
+        Intenciones Parroquiales
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="#" onclick="mostrarVista('dashboard')">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarVista('registro')">Registrar Intenciones</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="mostrarVista('reportes')">Consultas y Reportes</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenido Principal -->
+  <main class="container my-4">
+    
+    <!-- VISTA: Dashboard -->
+    <section id="dashboard" data-aos="fade-up">
+      <h1 class="display-5 mb-4">Dashboard</h1>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card h-100 shadow-sm border-0">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+              <h5 class="card-title">Registro Rápido</h5>
+              <p class="card-text">La forma más veloz de añadir múltiples intenciones para una misa.</p>
+              <button class="btn btn-primary btn-lg" onclick="mostrarVista('registro', 'rapido')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lightning-fill me-1" viewBox="0 0 16 16"><path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641l2.5-8.5z"/></svg>
+                Iniciar Registro Rápido
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card h-100 shadow-sm border-0">
+             <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+              <h5 class="card-title">Programar Intenciones</h5>
+              <p class="card-text">Registra una intención para varios días, un mes o más.</p>
+              <button class="btn btn-secondary btn-lg" onclick="mostrarVista('registro', 'programado')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-calendar-range me-1" viewBox="0 0 16 16"><path d="M9 7a1 1 0 0 1 1-1h5v2h-5a1 1 0 0 1-1-1zM1 9h4a1 1 0 0 1 0 2H1V9z"/><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                Programar Intención
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA: Registro -->
+    <section id="registro" class="d-none" data-aos="fade-up">
+        <h1 class="display-5 mb-4">Registro de Intenciones</h1>
+        <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="pills-rapido-tab" data-bs-toggle="pill" data-bs-target="#pills-rapido" type="button" role="tab">Registro Rápido</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pills-programado-tab" data-bs-toggle="pill" data-bs-target="#pills-programado" type="button" role="tab">Intención Programada</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="pills-tabContent">
+            <!-- Pestaña Registro Rápido -->
+            <div class="tab-pane fade show active" id="pills-rapido" role="tabpanel">
+              <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                  <form id="form-rapido">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label for="fecha-rapido" class="form-label">Fecha de la Misa</label>
+                        <input type="date" class="form-control form-control-lg" id="fecha-rapido" required>
+                      </div>
+                      <div class="col-md-6">
+                        <label for="hora-rapido" class="form-label">Hora de la Misa</label>
+                        <select id="hora-rapido" class="form-select form-select-lg" required></select>
+                      </div>
+                      <div class="col-12">
+                         <label for="categoria-rapido" class="form-label">Categoría</label>
+                         <select id="categoria-rapido" class="form-select form-select-lg" required>
+                            <option value="En Acción de Gracias">En Acción de Gracias</option>
+                            <option value="Por la Salud de">Por la Salud de</option>
+                            <option value="Por la Vida y la Salud">Por la Vida y la Salud</option>
+                            <option value="Por el Alma de">Por el Alma de</option>
+                         </select>
+                      </div>
+                      <div class="col-12">
+                        <label for="intenciones-rapido" class="form-label">Intenciones</label>
+                        <textarea class="form-control form-control-lg" id="intenciones-rapido" rows="8" placeholder="Escribe una intención por cada línea.&#10;Ejemplo:&#10;Pepito Sanchez&#10;Juan Cruz&#10;Sharon Sosa (Cumpleaños)&#10;Juan, Jesus, Roberta Gutierrez"></textarea>
+                        <div class="form-text">Cada salto de línea será un registro individual. Los nombres separados por comas se mantendrán juntos.</div>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg mt-4">Guardar Intenciones</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <!-- Pestaña Intención Programada -->
+            <div class="tab-pane fade" id="pills-programado" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body p-4">
+                    <form id="form-programado">
+                        <div class="row g-3">
+                          <div class="col-md-6">
+                            <label for="fecha-inicio-prog" class="form-label">Desde la Fecha</label>
+                            <input type="date" class="form-control form-control-lg" id="fecha-inicio-prog" required>
+                          </div>
+                          <div class="col-md-6">
+                            <label for="fecha-fin-prog" class="form-label">Hasta la Fecha</label>
+                            <input type="date" class="form-control form-control-lg" id="fecha-fin-prog" required>
+                          </div>
+                           <div class="col-md-6">
+                              <label for="hora-prog" class="form-label">Hora de la Misa</label>
+                              <select id="hora-prog" class="form-select form-select-lg" required>
+                                <option value="18:00">18:00 (Misa diaria)</option>
+                                <option value="09:00">09:00 (Domingo)</option>
+                                <option value="12:00">12:00 (Domingo)</option>
+                              </select>
+                            </div>
+                           <div class="col-md-6">
+                             <label for="categoria-prog" class="form-label">Categoría</label>
+                             <select id="categoria-prog" class="form-select form-select-lg" required>
+                                <option value="En Acción de Gracias">En Acción de Gracias</option>
+                                <option value="Por la Salud de">Por la Salud de</option>
+                                <option value="Por la Vida y la Salud">Por la Vida y la Salud</option>
+                                <option value="Por el Alma de">Por el Alma de</option>
+                             </select>
+                          </div>
+                          <div class="col-12">
+                            <label for="intencion-prog" class="form-label">Intención (Nombre)</label>
+                            <input type="text" class="form-control form-control-lg" id="intencion-prog" required>
+                          </div>
+                           <div class="col-12">
+                            <label for="nota-prog" class="form-label">Nota (Opcional)</label>
+                            <input type="text" class="form-control form-control-lg" id="nota-prog" placeholder="Ej: (Aniversario), (Onomástico)">
+                          </div>
+                          <div class="col-12">
+                              <label class="form-label">Seleccionar Días</label>
+                              <div id="dias-semana-checks">
+                                  <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" value="Lunes" id="checkLunes" checked>
+                                    <label class="form-check-label" for="checkLunes">Lunes</label>
+                                  </div>
+                                  <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" value="Martes" id="checkMartes" checked>
+                                    <label class="form-check-label" for="checkMartes">Martes</label>
+                                  </div>
+                                  <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" value="Miércoles" id="checkMiercoles" checked>
+                                    <label class="form-check-label" for="checkMiercoles">Miércoles</label>
+                                  </div>
+                                  <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" value="Jueves" id="checkJueves" checked>
+                                    <label class="form-check-label" for="checkJueves">Jueves</label>
+                                  </div>
+                                  <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" value="Viernes" id="checkViernes" checked>
+                                    <label class="form-check-label" for="checkViernes">Viernes</label>
+                                  </div>
+                                  <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" value="Sábado" id="checkSabado" checked>
+                                    <label class="form-check-label" for="checkSabado">Sábado</label>
+                                  </div>
+                                   <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" value="Domingo" id="checkDomingo" checked>
+                                    <label class="form-check-label" for="checkDomingo">Domingo</label>
+                                  </div>
+                              </div>
+                              <div class="mt-2">
+                                <input class="form-check-input" type="checkbox" id="excluir-domingos-prog">
+                                <label class="form-check-label" for="excluir-domingos-prog">
+                                  Excluir Domingos (para intenciones de un mes o más)
+                                </label>
+                              </div>
+                          </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg mt-4">Programar Intención</button>
+                    </form>
+                  </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VISTA: Reportes y Consultas -->
+    <section id="reportes" class="d-none" data-aos="fade-up">
+        <h1 class="display-5 mb-4">Consultas y Reportes</h1>
+        <div class="card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-4">
+                <label for="fecha-reporte" class="form-label">Selecciona una Fecha</label>
+                <input type="date" class="form-control form-control-lg" id="fecha-reporte">
+              </div>
+              <div class="col-md-4">
+                <label for="hora-reporte" class="form-label">Selecciona la Hora</label>
+                <select id="hora-reporte" class="form-select form-select-lg"></select>
+              </div>
+              <div class="col-md-4">
+                <button class="btn btn-success btn-lg w-100" id="btn-generar-reporte">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-pdf-fill me-1" viewBox="0 0 16 16"><path d="M5.523 12.424q.21-.124.453-.217a.75.75 0 0 1 .416.217q.217.124.384.26.17.134.283.296.113.162.177.375a.79.79 0 0 1 .079.437.86.86 0 0 1-.07.382.82.82 0 0 1-.24.34q-.16.148-.397.234a.71.71 0 0 1-.453.082.88.88 0 0 1-.453-.115.98.98 0 0 1-.32-.254.79.79 0 0 1-.164-.348.85.85 0 0 1 .046-.434.87.87 0 0 1 .2-.375q.145-.18.358-.296z"/><path d="M2 2a2 2 0 0 1 2-2h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm7.5 1.5v-2l3 3h-2a1 1 0 0 1-1-1zM4.165 13.668c.09.18.23.343.438.465.208.123.48.187.784.187.358 0 .66-.064.91-.193.244-.127.45-.316.62-.56.17-.245.278-.54.31-.868.032-.328.004-.637-.082-.897-.086-.26-.22-.484-.4-.64-.18-.156-.41-.26-.69-.325-.28-.065-.59-.083-.92-.058-.32.025-.59.096-.8.21-.21.113-.37.28-.47.492-.1.213-.13.46-.08.722.05.26.158.48.31.65.152.17.354.295.6.38z"/></svg>
+                  Generar Documento
+                </button>
+              </div>
+            </div>
+            <hr class="my-4">
+            <h5>Intenciones Encontradas: <span id="contador-intenciones">0</span></h5>
+            <div id="resultado-consulta" class="mt-3" style="max-height: 400px; overflow-y: auto;">
+              <!-- Los resultados se insertarán aquí -->
+            </div>
+          </div>
+        </div>
+    </section>
+
+  </main>
+
+  <!-- Spinner de Carga (Loader) -->
+  <div id="loader" class="d-none">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- Inclusión de Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>
+    AOS.init({ once: true });
+  </script>
+  <?!= include('javascript'); ?>
+</body>
+</html>
