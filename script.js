@@ -1,18 +1,6 @@
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzhjP_6H1q_sGNyWIshuz4AHv_E5oZLqyTnmVrgkz0JHAKEa9t4B-8uzVpNRtypIK-R/exec";
 
 // --- 
-const loader = document.getElementById('loader');
-function mostrarLoader() { loader.classList.remove('d-none'); }
-function ocultarLoader() { loader.classList.add('d-none'); }
-function mostrarAlerta(mensaje, tipo = 'success') {
-    const contenedor = document.querySelector('main');
-    const alerta = document.createElement('div');
-    alerta.className = `alert alert-${tipo} alert-dismissible fade show fixed-top m-4`;
-    alerta.setAttribute('role', 'alert');
-    alerta.innerHTML = `${mensaje}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
-    contenedor.prepend(alerta);
-    setTimeout(() => alerta.remove(), 5000);
-}
 
 // --- NUEVA FUNCIÓN PARA CARGAR DATOS DEL DASHBOARD ---
 function loadDashboardData() {
@@ -55,6 +43,19 @@ function loadDashboardData() {
             misasListEl.innerHTML = '<p class="text-danger">No se pudo cargar la información.</p>';
             console.error(err);
         });
+}
+// --------------
+const loader = document.getElementById('loader');
+function mostrarLoader() { loader.classList.remove('d-none'); }
+function ocultarLoader() { loader.classList.add('d-none'); }
+function mostrarAlerta(mensaje, tipo = 'success') {
+    const contenedor = document.querySelector('main');
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show fixed-top m-4`;
+    alerta.setAttribute('role', 'alert');
+    alerta.innerHTML = `${mensaje}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
+    contenedor.prepend(alerta);
+    setTimeout(() => alerta.remove(), 5000);
 }
 
 // --- NAVEGACIÓN (sin cambios) ---
