@@ -14,6 +14,49 @@ function mostrarAlerta(mensaje, tipo = 'success') {
     setTimeout(() => alerta.remove(), 5000);
 }
 
+// --- NUEVA FUNCIÓN PARA CARGAR DATOS DEL DASHBOARD ---
+function loadDashboardData() {
+    const statTodayEl = document.getElementById('stat-today');
+    const statWeekEl = document.getElementById('stat-week');
+    const misasListEl = document.getElementById('dashboard-misas-list');
+    
+    fetch(`${WEB_APP_URL}?action=getDashboardStats`)
+        .then(res => res.json())
+        .then(stats => {
+            statTodayEl.textContent = stats.intencionesHoy;
+            statWeekEl.textContent = stats.intencionesSemana;
+
+            misasListEl.innerHTML = ''; // Limpiar
+            const misas = stats.misasHoy;
+
+            if (Object.keys(misas).length === 0) {
+                misasListEl.innerHTML = '<p class="text-center text-muted mt-3">No hay misas con intenciones registradas para hoy.</p>';
+                return;
+            }
+
+            // Ordenar las horas
+            const horasOrdenadas = Object.keys(misas).sort();
+
+            horasOrdenadas.forEach(hora => {
+                const count = misas[hora];
+                const misaItem = document.createElement('div');
+                misaItem.className = 'misa-item';
+                misaItem.innerHTML = `
+                    <div>
+                        <i class="bi bi-clock me-2"></i>
+                        <strong>${hora}</strong>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${count} ${count === 1 ? 'intención' : 'intenciones'}</span>
+                `;
+                misasListEl.appendChild(misaItem);
+            });
+        })
+        .catch(err => {
+            misasListEl.innerHTML = '<p class="text-danger">No se pudo cargar la información.</p>';
+            console.error(err);
+        });
+}
+
 // --- NAVEGACIÓN (sin cambios) ---
 const vistas = ['dashboard', 'registro', 'reportes'];
 const navLinks = document.querySelectorAll('.nav-link');
@@ -62,6 +105,8 @@ function actualizarHorasMisa(fechaStr, selectId) {
 
 // --- EVENT LISTENERS (CON LA CORRECCIÓN) ---
 document.addEventListener('DOMContentLoaded', () => {
+    loadDashboardData(); 
+    
     setTodayDate();
     document.getElementById('fecha-rapido').addEventListener('change', (e) => actualizarHorasMisa(e.target.value, 'hora-rapido'));
     document.getElementById('fecha-reporte').addEventListener('change', (e) => actualizarHorasMisa(e.target.value, 'hora-reporte'));
