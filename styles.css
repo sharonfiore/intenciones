@@ -11,6 +11,7 @@
   --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
 
+
 body {
   font-family: 'Roboto', sans-serif;
   background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-end) 100%);
