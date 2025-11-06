@@ -53,21 +53,21 @@ function loadDashboardView() {
         <h2 class="view-title">Dashboard</h2>
         <div class="row g-4 mb-4">
             <div class="col-md-6">
-                <div class="card kpi-card p-3">
-                    <div class="icon-wrapper bg-primary"><i class="bi bi-calendar-heart"></i></div>
-                    <div class="card-body">
-                        <h3 id="stat-today">0</h3>
-                        <p>Intenciones para Hoy</p>
+                <div class="card kpi-card">
+                    <div class="text-content">
+                        <p class="kpi-title">Intenciones para Hoy</p>
+                        <h3 class="kpi-value" id="stat-today">...</h3>
                     </div>
+                    <div class="icon-wrapper bg-primary"><i class="bi bi-calendar-heart"></i></div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card kpi-card p-3">
-                    <div class="icon-wrapper bg-success"><i class="bi bi-calendar-week"></i></div>
-                    <div class="card-body">
-                        <h3 id="stat-week">0</h3>
-                        <p>Intenciones Próximos 7 Días</p>
+                <div class="card kpi-card">
+                    <div class="text-content">
+                        <p class="kpi-title">Intenciones Próximos 7 Días</p>
+                        <h3 class="kpi-value" id="stat-week">...</h3>
                     </div>
+                    <div class="icon-wrapper bg-success"><i class="bi bi-calendar-week"></i></div>
                 </div>
             </div>
         </div>
@@ -92,11 +92,11 @@ function loadTablaView() {
             <h2 class="view-title">Consultas y Reportes</h2>
             <div class="row g-3 align-items-end mb-4">
                 <div class="col-md-4">
-                    <label for="fecha-reporte" class="form-label">Selecciona una Fecha</label>
+                    <label for="fecha-reporte" class="form-label">Fecha</label>
                     <input type="date" class="form-control" id="fecha-reporte">
                 </div>
                 <div class="col-md-4">
-                    <label for="hora-reporte" class="form-label">Selecciona la Hora</label>
+                    <label for="hora-reporte" class="form-label">Hora</label>
                     <select id="hora-reporte" class="form-select"></select>
                 </div>
                 <div class="col-md-4">
@@ -115,13 +115,20 @@ function loadTablaView() {
 
 
 function loadCalendarView() {
+    const view = document.getElementById('calendario');
+    view.innerHTML = `
+        <div class="card p-4">
+            <h2 class="view-title">Calendario de Intenciones</h2>
+            <div id="calendar-container"></div>
+        </div>
+    `;
     const calendarEl = document.getElementById('calendar-container');
+
+    // Destruir la instancia anterior si existe para evitar duplicados al cambiar de vista
     if (calendar) {
-        // Si el calendario ya existe, solo es necesario refrescar los eventos
-        calendar.refetchEvents();
-        return;
+        calendar.destroy();
     }
-    // Si no existe, se crea
+    
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'es', // Para que se muestre en español
@@ -132,7 +139,7 @@ function loadCalendarView() {
         },
         events: function(fetchInfo, successCallback, failureCallback) {
             const year = fetchInfo.start.getFullYear();
-            const month = fetchInfo.start.getMonth() + 1;
+            const month = fetchInfo.start.getMonth() + 1; // getMonth es 0-indexado
             fetch(`${WEB_APP_URL}?action=getIntencionesForCalendar&year=${year}&month=${month}`)
                 .then(res => res.json())
                 .then(events => successCallback(events))
@@ -147,33 +154,25 @@ function loadRegistroView() {
     view.innerHTML = `
         <div class="card p-4">
             <h2 class="view-title">Registro de Intenciones</h2>
-            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="pills-rapido-tab" data-bs-toggle="pill" data-bs-target="#pills-rapido" type="button" role="tab">Registro Rápido</button>
+            <ul class="nav nav-pills mb-3" id="pills-tab">
+                <li class="nav-item">
+                    <button class="nav-link active" id="pills-rapido-tab" data-bs-toggle="pill" data-bs-target="#pills-rapido">Registro Rápido</button>
                 </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="pills-programado-tab" data-bs-toggle="pill" data-bs-target="#pills-programado" type="button" role="tab">Intención Programada</button>
+                <li class="nav-item">
+                    <button class="nav-link" id="pills-programado-tab" data-bs-toggle="pill" data-bs-target="#pills-programado">Intención Programada</button>
                 </li>
             </ul>
             <div class="tab-content" id="pills-tabContent">
-                <!-- Pestaña Registro Rápido -->
-                <div class="tab-pane fade show active" id="pills-rapido" role="tabpanel">
-                    <form id="form-rapido">
-                        <!-- ... Contenido del formulario de registro rápido ... -->
-                    </form>
+                <div class="tab-pane fade show active" id="pills-rapido">
+                    <form id="form-rapido"></form>
                 </div>
-                <!-- Pestaña Intención Programada -->
-                <div class="tab-pane fade" id="pills-programado" role="tabpanel">
-                    <form id="form-programado">
-                        <!-- ... Contenido del formulario de registro programado ... -->
-                    </form>
+                <div class="tab-pane fade" id="pills-programado">
+                    <form id="form-programado"></form>
                 </div>
             </div>
         </div>
     `;
-    // Inyectar el HTML de los formularios
     injectFormHTML();
-    // Configurar los listeners para los formularios recién creados
     setupFormListeners();
 }
 
@@ -291,58 +290,64 @@ function setupFormListeners() {
 
     // Formulario Rápido
     const formRapido = document.getElementById('form-rapido');
-    const fechaRapidoInput = document.getElementById('fecha-rapido');
-    fechaRapidoInput.value = today;
-    actualizarHorasMisa(today, 'hora-rapido');
-    fechaRapidoInput.addEventListener('change', (e) => actualizarHorasMisa(e.target.value, 'hora-rapido'));
-    
-    formRapido.addEventListener('submit', (e) => {
-        e.preventDefault();
-        mostrarLoader();
-        const payload = {
-            action: 'registrarRapido',
-            data: {
-                fecha: fechaRapidoInput.value,
-                hora: document.getElementById('hora-rapido').value,
-                categoria: document.getElementById('categoria-rapido').value,
-                intenciones: document.getElementById('intenciones-rapido').value
-            }
-        };
+    if (formRapido) {
+        const fechaRapidoInput = document.getElementById('fecha-rapido');
+        fechaRapidoInput.value = today;
+        actualizarHorasMisa(today, 'hora-rapido');
+        fechaRapidoInput.addEventListener('change', (e) => actualizarHorasMisa(e.target.value, 'hora-rapido'));
         
-        fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
-        .then(res => res.json())
-        .then(handleFormResponse)
-        .catch(handleFormError);
-    });
+        formRapido.addEventListener('submit', (e) => {
+            e.preventDefault();
+            mostrarLoader();
+            const payload = {
+                action: 'registrarRapido',
+                data: {
+                    fecha: fechaRapidoInput.value,
+                    hora: document.getElementById('hora-rapido').value,
+                    categoria: document.getElementById('categoria-rapido').value,
+                    intenciones: document.getElementById('intenciones-rapido').value
+                }
+            };
+            
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(handleFormResponse)
+            .catch(handleFormError);
+        });
+    }
 
     // Formulario Programado
     const formProgramado = document.getElementById('form-programado');
-    document.getElementById('fecha-inicio-prog').value = today;
-    document.getElementById('fecha-fin-prog').value = today;
+    if (formProgramado) {
+        document.getElementById('fecha-inicio-prog').value = today;
+        document.getElementById('fecha-fin-prog').value = today;
 
-    formProgramado.addEventListener('submit', (e) => {
-        e.preventDefault();
-        mostrarLoader();
-        const dias = Array.from(document.querySelectorAll('#form-programado input[type=checkbox]:checked')).filter(cb => cb.id !== 'excluir-domingos-prog').map(cb => cb.value);
-        const payload = {
-            action: 'registrarProgramado',
-            data: {
-                fechaInicio: document.getElementById('fecha-inicio-prog').value,
-                fechaFin: document.getElementById('fecha-fin-prog').value,
-                hora: document.getElementById('hora-prog').value,
-                categoria: document.getElementById('categoria-prog').value,
-                intencion: document.getElementById('intencion-prog').value,
-                nota: document.getElementById('nota-prog').value,
-                dias: dias,
-                excluirDomingos: document.getElementById('excluir-domingos-prog').checked
-            }
-        };
+        formProgramado.addEventListener('submit', (e) => {
+            e.preventDefault();
+            mostrarLoader();
+            const dias = Array.from(document.querySelectorAll('#form-programado input[type=checkbox]:checked'))
+                .filter(cb => cb.id !== 'excluir-domingos-prog')
+                .map(cb => cb.value);
+            const payload = {
+                action: 'registrarProgramado',
+                data: {
+                    fechaInicio: document.getElementById('fecha-inicio-prog').value,
+                    fechaFin: document.getElementById('fecha-fin-prog').value,
+                    hora: document.getElementById('hora-prog').value,
+                    categoria: document.getElementById('categoria-prog').value,
+                    intencion: document.getElementById('intencion-prog').value,
+                    nota: document.getElementById('nota-prog').value,
+                    dias: dias,
+                    excluirDomingos: document.getElementById('excluir-domingos-prog').checked
+                }
+            };
 
-        fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
-        .then(res => res.json())
-        .then(handleFormResponse)
-        .catch(handleFormError);
-    });
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(handleFormResponse)
+            .catch(handleFormError);
+        });
+    }
 }
 
 function setupTablaListeners() {
@@ -403,7 +408,7 @@ function consultarIntenciones() {
                 resultadoConsulta.innerHTML = '<p class="text-muted">No se encontraron intenciones para esta fecha y hora.</p>';
             } else {
                 const ul = document.createElement('ul');
-                ul.className = 'list-group';
+                ul.className = 'list-group list-group-flush';
                 intencionesFiltradas.forEach(i => {
                     const li = document.createElement('li');
                     li.className = 'list-group-item';
@@ -424,7 +429,7 @@ function handleFormResponse(response) {
         // Resetear el formulario específico
         if (document.getElementById('form-rapido')) document.getElementById('form-rapido').reset();
         if (document.getElementById('form-programado')) document.getElementById('form-programado').reset();
-        loadRegistroView(); // Recargar la vista para resetear fechas
+        loadRegistroView(); // Recargar la vista para resetear fechas y estado
     } else {
         mostrarAlerta(response.message, response.status === 'info' ? 'info' : 'danger');
     }
@@ -441,14 +446,19 @@ function mostrarLoader() { loader.classList.remove('d-none'); }
 function ocultarLoader() { loader.classList.add('d-none'); }
 
 function mostrarAlerta(mensaje, tipo = 'success') {
-    const contenedor = document.querySelector('.main-content');
+    const contenedor = document.querySelector('body');
     const alerta = document.createElement('div');
     alerta.style.position = 'fixed';
     alerta.style.top = '20px';
     alerta.style.right = '20px';
     alerta.style.zIndex = '1050';
-    alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show shadow-lg`;
     alerta.innerHTML = `${mensaje}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
     contenedor.appendChild(alerta);
-    setTimeout(() => bootstrap.Alert.getOrCreateInstance(alerta).close(), 5000);
+    setTimeout(() => {
+        const alertInstance = bootstrap.Alert.getOrCreateInstance(alerta);
+        if (alertInstance) {
+            alertInstance.close();
+        }
+    }, 5000);
 }
