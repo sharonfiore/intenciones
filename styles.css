@@ -1,46 +1,43 @@
-<style>
-  body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #f8f9fa;
-  }
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f8f9fa;
+}
 
-  .navbar {
-    background: linear-gradient(90deg, rgba(52,58,64,1) 0%, rgba(33,37,41,1) 100%);
-  }
-  
-  .card {
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-  }
+.navbar {
+  background: linear-gradient(90deg, rgba(52,58,64,1) 0%, rgba(33,37,41,1) 100%);
+}
 
-  .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-  }
+.card {
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
 
-  .btn-lg {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.1rem;
-  }
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
 
-  /* Estilo del Loader */
-  #loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.7);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+}
 
-  .nav-pills .nav-link {
-    color: #495057;
-  }
+#loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  .nav-pills .nav-link.active {
-    background-color: #0d6efd;
-  }
-</style>
+.nav-pills .nav-link {
+  color: #495057;
+}
+
+.nav-pills .nav-link.active {
+  background-color: #0d6efd;
+}
