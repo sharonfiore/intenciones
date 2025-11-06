@@ -1,10 +1,10 @@
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzhjP_6H1q_sGNyWIshuz4AHv_E5oZLqyTnmVrgkz0JHAKEa9t4B-8uzVpNRtypIK-R/exec";
 
+// --- 
 const loader = document.getElementById('loader');
 function mostrarLoader() { loader.classList.remove('d-none'); }
 function ocultarLoader() { loader.classList.add('d-none'); }
 function mostrarAlerta(mensaje, tipo = 'success') {
-    // ... (esta función es idéntica a la anterior)
     const contenedor = document.querySelector('main');
     const alerta = document.createElement('div');
     alerta.className = `alert alert-${tipo} alert-dismissible fade show fixed-top m-4`;
@@ -18,7 +18,6 @@ function mostrarAlerta(mensaje, tipo = 'success') {
 const vistas = ['dashboard', 'registro', 'reportes'];
 const navLinks = document.querySelectorAll('.nav-link');
 function mostrarVista(idVista, subvista = null) {
-    // ... (esta función es idéntica a la anterior)
      vistas.forEach(id => { document.getElementById(id).classList.add('d-none'); });
       document.getElementById(idVista).classList.remove('d-none');
       navLinks.forEach(link => {
@@ -32,7 +31,7 @@ function mostrarVista(idVista, subvista = null) {
       window.scrollTo(0, 0);
 }
 
-// --- LÓGICA DE LA APLICACIÓN (MODIFICADA) ---
+// --- LÓGICA DE LA APLICACIÓN ---
 function setTodayDate() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('fecha-rapido').value = today;
@@ -43,7 +42,6 @@ function setTodayDate() {
     actualizarHorasMisa(today, 'hora-reporte');
 }
 
-// NUEVA FUNCIÓN: Actualizar horas de misa usando fetch
 function actualizarHorasMisa(fechaStr, selectId) {
     const select = document.getElementById(selectId);
     select.innerHTML = '';
@@ -62,7 +60,7 @@ function actualizarHorasMisa(fechaStr, selectId) {
         .catch(err => mostrarAlerta('Error al cargar horas: ' + err, 'danger'));
 }
 
-// --- EVENT LISTENERS (MODIFICADOS) ---
+// --- EVENT LISTENERS (CON LA CORRECCIÓN) ---
 document.addEventListener('DOMContentLoaded', () => {
     setTodayDate();
     document.getElementById('fecha-rapido').addEventListener('change', (e) => actualizarHorasMisa(e.target.value, 'hora-rapido'));
@@ -84,8 +82,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch(WEB_APP_URL, {
             method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'application/json' }
+            body: JSON.stringify(payload)
+            // Ya no especificamos el header 'Content-Type'. Dejar que el navegador lo maneje, 
+            // o a menudo se envía como text/plain, lo cual evita el problema de CORS preflight.
         })
         .then(res => res.json())
         .then(response => {
@@ -125,8 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch(WEB_APP_URL, {
             method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'application/json' }
+            body: JSON.stringify(payload)
         })
         .then(res => res.json())
         .then(response => {
