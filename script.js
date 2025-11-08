@@ -2,11 +2,17 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzhjP_6H1q_sGNyWIsh
 
 // --- INICIALIZACIÓN Y NAVEGACIÓN ---
 let calendar; // Variable global para la instancia del calendario
+let editModalInstance; // Para controlar el modal de edición
+let currentIntenciones = []; // Almacenará los datos de la consulta actual
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
     // Cargar la vista inicial del dashboard por defecto
     showView('dashboard');
+    // Inicializar la instancia del Modal de Bootstrap
+    if (document.getElementById('editModal')) {
+        editModalInstance = new bootstrap.Modal(document.getElementById('editModal'));
+    }
 });
 
 function setupNavigation() {
@@ -14,33 +20,22 @@ function setupNavigation() {
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            const viewId = link.getAttribute('data-view');
-            navLinks.forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-            showView(viewId);
+            showView(link.getAttribute('data-view'));
         });
     });
 }
 
 function showView(viewId) {
     document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-    const activeView = document.getElementById(viewId);
-    activeView.classList.add('active');
+    document.getElementById(viewId).classList.add('active');
     
-    // Cargar el contenido HTML y la lógica específica de cada vista
     switch(viewId) {
-        case 'dashboard':
-            loadDashboardView();
-            break;
-        case 'tabla':
-            loadTablaView();
-            break;
-        case 'calendario':
-            loadCalendarView();
-            break;
-        case 'registro':
-            loadRegistroView();
-            break;
+        case 'dashboard': loadDashboardView(); break;
+        case 'tabla': loadTablaView(); break;
+        case 'calendario': loadCalendarView(); break;
+        case 'registro': loadRegistroView(); break;
     }
 }
 
@@ -388,6 +383,22 @@ function setupTablaListeners() {
                 mostrarAlerta('Error inesperado: ' + err, 'danger');
             });
     });
+
+    // AÑADIMOS EVENT DELEGATION PARA LOS BOTONES
+    const resultadoContainer = document.getElementById('resultado-consulta');
+    resultadoContainer.addEventListener('click', function(e) {
+        const editButton = e.target.closest('.edit-btn');
+        const deleteButton = e.target.closest('.delete-btn');
+        if (editButton) {
+            handleEditClick(editButton.dataset.row);
+        }
+        if (deleteButton) {
+            handleDeleteClick(deleteButton.dataset.row);
+        }
+    });
+
+    // Listener para el botón de guardar en el modal
+    document.getElementById('saveEditButton').addEventListener('click', saveEditChanges);
 }
 
 function consultarIntenciones() {
@@ -400,22 +411,43 @@ function consultarIntenciones() {
     fetch(`${WEB_APP_URL}?action=getIntenciones&fecha=${fecha}`)
         .then(res => res.json())
         .then(intenciones => {
+            currentIntenciones = intenciones; // Guardar los resultados
             resultadoConsulta.innerHTML = '';
             const intencionesFiltradas = intenciones.filter(i => !hora || i.horaMisa == hora);
             contador.textContent = intencionesFiltradas.length;
             
             if (intencionesFiltradas.length === 0) {
-                resultadoConsulta.innerHTML = '<p class="text-muted">No se encontraron intenciones para esta fecha y hora.</p>';
+                resultadoConsulta.innerHTML = '<p class="text-muted">No se encontraron intenciones.</p>';
             } else {
-                const ul = document.createElement('ul');
-                ul.className = 'list-group list-group-flush';
+                // USAMOS UNA TABLA PARA MAYOR CLARIDAD
+                const table = document.createElement('table');
+                table.className = 'table table-hover';
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Intención</th>
+                            <th>Categoría</th>
+                            <th>Hora</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+                const tbody = table.querySelector('tbody');
                 intencionesFiltradas.forEach(i => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item';
-                    li.innerHTML = `<strong>${i.intencion}</strong> ${i.nota || ''} <br><small class="text-muted">${i.categoria} - ${i.horaMisa}</small>`;
-                    ul.appendChild(li);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${i.intencion}</strong> ${i.nota || ''}</td>
+                        <td>${i.categoria}</td>
+                        <td>${i.horaMisa}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary edit-btn" data-row="${i.row}"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger delete-btn" data-row="${i.row}"><i class="bi bi-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
                 });
-                resultadoConsulta.appendChild(ul);
+                resultadoConsulta.appendChild(table);
             }
         });
 }
@@ -461,4 +493,73 @@ function mostrarAlerta(mensaje, tipo = 'success') {
             alertInstance.close();
         }
     }, 5000);
+}
+
+// --- NUEVA LÓGICA PARA EDICIÓN Y ELIMINACIÓN ---
+
+function handleEditClick(rowId) {
+    // Buscar la intención en los datos que ya tenemos
+    const intencion = currentIntenciones.find(i => i.row == rowId);
+    if (intencion) {
+        // Llenar el formulario del modal
+        document.getElementById('editRowId').value = intencion.row;
+        document.getElementById('editIntencion').value = intencion.intencion;
+        document.getElementById('editNota').value = intencion.nota;
+        document.getElementById('editCategoria').value = intencion.categoria;
+        // Mostrar el modal
+        editModalInstance.show();
+    }
+}
+
+function handleDeleteClick(rowId) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta intención? Esta acción no se puede deshacer.')) {
+        mostrarLoader();
+        const payload = {
+            action: 'deleteIntencion',
+            data: { row: rowId }
+        };
+        fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(response => {
+                ocultarLoader();
+                if (response.status === 'ok') {
+                    mostrarAlerta(response.message, 'success');
+                    consultarIntenciones(); // Recargar la lista
+                } else {
+                    mostrarAlerta(response.message, 'danger');
+                }
+            })
+            .catch(handleFormError);
+    }
+}
+
+function saveEditChanges() {
+    mostrarLoader();
+    const payload = {
+        action: 'editIntencion',
+        data: {
+            row: document.getElementById('editRowId').value,
+            intencion: document.getElementById('editIntencion').value,
+            nota: document.getElementById('editNota').value,
+            categoria: document.getElementById('editCategoria').value
+        }
+    };
+
+    fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .then(res => res.json())
+        .then(response => {
+            ocultarLoader();
+            editModalInstance.hide();
+            if (response.status === 'ok') {
+                mostrarAlerta(response.message, 'success');
+                consultarIntenciones(); // Recargar la lista
+            } else {
+                mostrarAlerta(response.message, 'danger');
+            }
+        })
+        .catch(err => {
+            ocultarLoader();
+            editModalInstance.hide();
+            handleFormError(err);
+        });
 }
