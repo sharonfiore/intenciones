@@ -173,3 +173,31 @@ body {
 .form-control:focus, .form-select:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 0.25rem rgba(10, 37, 64, 0.1); }
 .nav-pills .nav-link { color: var(--text-secondary); }
 .nav-pills .nav-link.active { background-color: var(--primary-blue); }
+
+/* ===== Estilos para el Modal del Calendario ===== */
+.horario-card {
+    background-color: var(--primary-blue-light);
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 1rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    margin-bottom: 1rem;
+}
+
+.horario-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--soft-shadow);
+    background-color: var(--primary-blue);
+    color: white;
+}
+
+.horario-card .horario-time {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+#modal-back-button {
+    margin-bottom: 1.5rem;
+}
