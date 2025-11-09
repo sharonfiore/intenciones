@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (document.getElementById('calendarDetailModal')) {
         calendarDetailModalInstance = new bootstrap.Modal(document.getElementById('calendarDetailModal'));
-        setupCalendarModalListeners(); // Configurar listeners para el nuevo modal
+        setupCalendarModalListeners();
     }
 });
 
@@ -249,15 +249,45 @@ function setupCalendarModalListeners() {
 // =========================================================
 function fetchDashboardStats(){fetch(`${WEB_APP_URL}?action=getDashboardStats`).then(e=>e.json()).then(e=>{document.getElementById("stat-today").textContent=e.intencionesHoy,document.getElementById("stat-week").textContent=e.intencionesSemana}).catch(e=>console.error("Error fetching stats:",e))}
 function fetchRecentIntenciones(){const e=document.querySelector("#recent-intenciones-table tbody");fetch(`${WEB_APP_URL}?action=getRecentIntenciones`).then(e=>e.json()).then(t=>{if(e.innerHTML="",!t||0===t.length)return void(e.innerHTML='<tr><td colspan="3" class="text-center p-4">No hay registros recientes.</td></tr>');t.forEach(t=>{const n=`<tr><td><strong>${t.intencion}</strong> ${t.nota||""}</td><td>${t.categoria}</td><td>${t.fechaMisa}</td></tr>`;e.innerHTML+=n})}).catch(t=>{console.error("Error fetching recents:",t),e.innerHTML='<tr><td colspan="3" class="text-center text-danger p-4">Error al cargar registros.</td></tr>'})}
-function actualizarHorasMisa(e,t){const n=document.getElementById(t);n.innerHTML="",e&&fetch(`${WEB_APP_URL}?action=getHorasMisa&fecha=${e}`).then(e=>e.json()).then(e=>{e.forEach(e=>{const o=document.createElement("option");o.value=e,o.textContent=e,n.appendChild(o)})}).catch(e=>mostrarAlerta("Error al cargar horas: "+e,"danger"))}
 
+function actualizarHorasMisa(fechaStr, selectId) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = '';
+    if (!fechaStr) return Promise.reject("Fecha no proporcionada");
+    
+    // <-- MODIFICADO: Devolvemos la promesa para poder encadenar .then()
+    return fetch(`${WEB_APP_URL}?action=getHorasMisa&fecha=${fechaStr}`)
+        .then(response => response.json())
+        .then(horas => {
+            horas.forEach(hora => {
+                const option = document.createElement('option');
+                option.value = hora;
+                option.textContent = hora;
+                select.appendChild(option);
+            });
+        })
+        .catch(err => {
+            mostrarAlerta('Error al cargar horas: ' + err, 'danger');
+            throw err; // Propagar el error
+        });
+}
 function handleEditClick(rowId) {
     const intencion = currentIntenciones.find(i => i.row == rowId);
     if (intencion) {
+        // Llenar el formulario del modal
         document.getElementById('editRowId').value = intencion.row;
         document.getElementById('editIntencion').value = intencion.intencion;
         document.getElementById('editNota').value = intencion.nota;
         document.getElementById('editCategoria').value = intencion.categoria;
+
+        // <-- NUEVO: Poblar y seleccionar la hora -->
+        // Primero, llenamos el selector con las horas disponibles para ese día...
+        actualizarHorasMisa(intencion.fechaMisaStr, 'editHoraMisa')
+            .then(() => {
+                // ...y DESPUÉS de que se llene, seleccionamos la hora actual.
+                document.getElementById('editHoraMisa').value = intencion.horaMisa;
+            });
+
         editModalInstance.show();
     }
 }
@@ -310,22 +340,20 @@ function saveEditChanges() {
         action: 'editIntencion',
         data: {
             row: document.getElementById('editRowId').value,
+            // <-- NUEVO: Incluimos la hora en los datos a guardar -->
+            horaMisa: document.getElementById('editHoraMisa').value,
             intencion: document.getElementById('editIntencion').value,
             nota: document.getElementById('editNota').value,
             categoria: document.getElementById('editCategoria').value
         }
     };
+
     fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
         .then(res => res.json())
         .then(response => {
             ocultarLoader();
             editModalInstance.hide();
-            if (response.status === 'ok') {
-                mostrarAlerta(response.message, 'success');
-                consultarIntenciones(); // Recargar la lista
-            } else {
-                mostrarAlerta(response.message, 'danger');
-            }
+            handleApiResponse(response); // Usamos la función genérica
         })
         .catch(err => {
             ocultarLoader();
@@ -333,7 +361,6 @@ function saveEditChanges() {
             handleFormError(err);
         });
 }
-
 
 
 // ------------------------------------
