@@ -1,7 +1,7 @@
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzhjP_6H1q_sGNyWIshuz4AHv_E5oZLqyTnmVrgkz0JHAKEa9t4B-8uzVpNRtypIK-R/exec";
 
 // --- INICIALIZACIÓN Y NAVEGACIÓN ---
-let calendar, editModalInstance, deleteGroupModalInstance;
+let calendar, editModalInstance, deleteGroupModalInstance, calendarDetailModalInstance;
 let currentIntenciones = [];
 let dayDataCache = {};
 
@@ -334,6 +334,84 @@ function saveEditChanges() {
         });
 }
 
+
+
+// ------------------------------------
+
+function generatePDF() {
+    const fechaStr = document.getElementById('fecha-reporte').value;
+    const hora = document.getElementById('hora-reporte').value;
+    if (!fechaStr || !hora) {
+        mostrarAlerta('Debes seleccionar una fecha y hora para generar el reporte.', 'warning');
+        return;
+    }
+
+    const intencionesFiltradas = currentIntenciones.filter(i => i.horaMisa == hora);
+    if (intencionesFiltradas.length === 0) {
+        mostrarAlerta('No hay intenciones para generar un PDF en este horario.', 'info');
+        return;
+    }
+
+    // Inicializar jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // --- TÍTULO ---
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaFormateada = fecha.toLocaleDateString('es-ES', opcionesFecha).toUpperCase();
+    
+    doc.setFontSize(16);
+    doc.text(`MISA ${fechaFormateada} - ${hora}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text("PARROQUIA SAN PEDRO APOSTOL", doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
+
+    // --- CUERPO (INTENCIONES) ---
+    const categorias = {
+        "En Acción de Gracias": [],
+        "Por la Salud de": [],
+        "Por la Vida y la Salud": [],
+        "Por el Alma de": []
+    };
+
+    intencionesFiltradas.forEach(i => {
+        let texto = `${i.intencion} ${i.nota || ''}`;
+        if (i.tipo === 'Programada') {
+            texto = `* ${texto}`; // Añadir asterisco para programadas
+        }
+        if (categorias[i.categoria]) {
+            categorias[i.categoria].push(texto);
+        }
+    });
+
+    let startY = 35; // Posición inicial debajo del título
+    const margin = 15;
+
+    for (const categoriaNombre in categorias) {
+        const items = categorias[categoriaNombre];
+        if (items.length > 0) {
+            // Título de la categoría
+            doc.setFont(undefined, 'bold');
+            doc.text(`${categoriaNombre}:`, margin, startY);
+            startY += 7;
+
+            // Lista de intenciones
+            doc.setFont(undefined, 'normal');
+            items.forEach(item => {
+                // Añadimos el guion y manejamos el salto de línea si el texto es muy largo
+                const lines = doc.splitTextToSize(`- ${item}`, doc.internal.pageSize.getWidth() - margin * 2 - 5);
+                doc.text(lines, margin + 5, startY);
+                startY += (lines.length * 5); // Aumentar espacio por cada línea
+            });
+            startY += 5; // Espacio extra entre categorías
+        }
+    }
+
+    // --- GUARDAR EL ARCHIVO ---
+    const nombreArchivo = `Intenciones_${fechaStr}_${hora.replace(':', '')}.pdf`;
+    doc.save(nombreArchivo);
+}
+
 // --- EVENT LISTENERS PARA FORMULARIOS Y ACCIONES ---
 
 function setupFormListeners() {
@@ -367,25 +445,18 @@ function setupTablaListeners() {
     const today = new Date().toISOString().split('T')[0];
     const fechaReporteInput = document.getElementById('fecha-reporte');
     fechaReporteInput.value = today;
+    
     actualizarHorasMisa(today, 'hora-reporte');
     consultarIntenciones();
+    
     fechaReporteInput.addEventListener('change', () => {
         actualizarHorasMisa(fechaReporteInput.value, 'hora-reporte');
         consultarIntenciones();
     });
+    
     document.getElementById('hora-reporte').addEventListener('change', consultarIntenciones);
-    document.getElementById('btn-generar-reporte').addEventListener('click', () => {
-        const fecha = fechaReporteInput.value; const hora = document.getElementById('hora-reporte').value;
-        if (!fecha || !hora) return mostrarAlerta('Debes seleccionar fecha y hora.', 'warning');
-        mostrarLoader();
-        const payload = { action: 'generarDocumento', data: { fecha, hora } };
-        fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
-            .then(res => res.json()).then(response => {
-                ocultarLoader();
-                if(response.status === 'ok') { mostrarAlerta(`Documento generado. <a href="${response.url}" target="_blank" class="alert-link"><strong>Abrir Documento</strong></a>`, 'success'); }
-                else { mostrarAlerta('Error al generar el documento.', 'danger'); }
-            }).catch(err => { ocultarLoader(); mostrarAlerta('Error inesperado: ' + err, 'danger'); });
-    });
+    document.getElementById('btn-generar-reporte').addEventListener('click', generatePDF);
+
     const resultadoContainer = document.getElementById('resultado-consulta');
     resultadoContainer.addEventListener('click', function(e) {
         const editButton = e.target.closest('.edit-btn');
