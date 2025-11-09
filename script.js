@@ -3,6 +3,7 @@ const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzhjP_6H1q_sGNyWIsh
 // --- INICIALIZACIÓN Y NAVEGACIÓN ---
 let calendar, editModalInstance, deleteGroupModalInstance;
 let currentIntenciones = [];
+let dayDataCache = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNavigation();
@@ -12,6 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (document.getElementById('deleteGroupModal')) {
         deleteGroupModalInstance = new bootstrap.Modal(document.getElementById('deleteGroupModal'));
+    }
+    if (document.getElementById('calendarDetailModal')) {
+        calendarDetailModalInstance = new bootstrap.Modal(document.getElementById('calendarDetailModal'));
+        setupCalendarModalListeners(); // Configurar listeners para el nuevo modal
     }
 });
 
@@ -39,8 +44,6 @@ function showView(viewId) {
     }
 }
 
-
-// (Estas funciones no cambian)
 function loadDashboardView() {
     const view = document.getElementById('dashboard');
     view.innerHTML = `
@@ -59,14 +62,23 @@ function loadTablaView() {
     view.innerHTML = `<div class="card p-4"><h2 class="view-title">Consultas y Reportes</h2><div class="row g-3 align-items-end mb-4"><div class="col-md-4"><label for="fecha-reporte" class="form-label">Fecha</label><input type="date" class="form-control" id="fecha-reporte"></div><div class="col-md-4"><label for="hora-reporte" class="form-label">Hora</label><select id="hora-reporte" class="form-select"></select></div><div class="col-md-4"><button class="btn btn-primary w-100" id="btn-generar-reporte"><i class="bi bi-file-earmark-pdf-fill me-1"></i> Generar Documento</button></div></div><hr class="my-4"><h5>Intenciones Encontradas: <span id="contador-intenciones">0</span></h5><div id="resultado-consulta" class="mt-3"></div></div>`;
     setupTablaListeners();
 }
+
 function loadCalendarView() {
     const view = document.getElementById('calendario');
     view.innerHTML = `<div class="card p-4"><h2 class="view-title">Calendario de Intenciones</h2><div id="calendar-container"></div></div>`;
     const calendarEl = document.getElementById('calendar-container');
+
     if (calendar) { calendar.destroy(); }
+    
     calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth', locale: 'es', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-        events: (fetchInfo, successCallback, failureCallback) => {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                dateClick: function(info) {
+            handleDateClick(info.dateStr); // info.dateStr es "YYYY-MM-DD"
+        },
+        
+        events: function(fetchInfo, successCallback, failureCallback) {
             const { start } = fetchInfo;
             fetch(`${WEB_APP_URL}?action=getIntencionesForCalendar&year=${start.getFullYear()}&month=${start.getMonth() + 1}`)
                 .then(res => res.json()).then(events => successCallback(events)).catch(err => failureCallback(err));
@@ -74,21 +86,170 @@ function loadCalendarView() {
     });
     calendar.render();
 }
+
 function loadRegistroView() {
     const view = document.getElementById('registro');
     view.innerHTML = `<div class="card p-4"><h2 class="view-title">Registro de Intenciones</h2><ul class="nav nav-pills mb-3" id="pills-tab"><li class="nav-item"><button class="nav-link active" id="pills-rapido-tab" data-bs-toggle="pill" data-bs-target="#pills-rapido">Registro Rápido</button></li><li class="nav-item"><button class="nav-link" id="pills-programado-tab" data-bs-toggle="pill" data-bs-target="#pills-programado">Intención Programada</button></li></ul><div class="tab-content" id="pills-tabContent"><div class="tab-pane fade show active" id="pills-rapido"><form id="form-rapido"></form></div><div class="tab-pane fade" id="pills-programado"><form id="form-programado"></form></div></div></div>`;
     injectFormHTML();
     setupFormListeners();
 }
-function injectFormHTML(){document.getElementById("form-rapido").innerHTML=`<div class=row g-3><div class="col-md-6"><label for=fecha-rapido class=form-label>Fecha de la Misa</label><input type=date class=form-control id=fecha-rapido required></div><div class="col-md-6"><label for=hora-rapido class=form-label>Hora de la Misa</label><select id=hora-rapido class=form-select required></select></div><div class=col-12><label for=categoria-rapido class=form-label>Categoría</label><select id=categoria-rapido class=form-select required><option value="En Acción de Gracias">En Acción de Gracias</option><option value="Por la Salud de">Por la Salud de</option><option value="Por la Vida y la Salud">Por la Vida y la Salud</option><option value="Por el Alma de">Por el Alma de</option></select></div><div class=col-12><label for=intenciones-rapido class=form-label>Intenciones (una por línea)</label><textarea class=form-control id=intenciones-rapido rows=8 placeholder="Ej:\nJuan Pérez\nFamilia Gómez (Aniversario)"></textarea></div></div><button type=submit class="btn btn-primary mt-4">Guardar Intenciones</button>`,document.getElementById("form-programado").innerHTML=`<div class=row g-3><div class="col-md-6"><label for=fecha-inicio-prog class=form-label>Desde la Fecha</label><input type=date class=form-control id=fecha-inicio-prog required></div><div class="col-md-6"><label for=fecha-fin-prog class=form-label>Hasta la Fecha</label><input type=date class=form-control id=fecha-fin-prog required></div><div class="col-md-6"><label for=hora-prog class=form-label>Hora de la Misa</label><select id=hora-prog class=form-select required><option value=18:00>18:00 (Diaria)</option><option value=09:00>09:00 (Domingo)</option><option value=12:00>12:00 (Domingo)</option></select></div><div class="col-md-6"><label for=categoria-prog class=form-label>Categoría</label><select id=categoria-prog class=form-select required><option value="En Acción de Gracias">En Acción de Gracias</option><option value="Por la Salud de">Por la Salud de</option><option value="Por la Vida y la Salud">Por la Vida y la Salud</option><option value="Por el Alma de">Por el Alma de</option></select></div><div class=col-12><label for=intencion-prog class=form-label>Intención (Nombre)</label><input type=text class=form-control id=intencion-prog required></div><div class=col-12><label for=nota-prog class=form-label>Nota (Opcional)</label><input type=text class=form-control id=nota-prog placeholder="Ej: (Aniversario)"></div><div class=col-12><label class=form-label>Seleccionar Días</label><div><div class="form-check form-check-inline"><input class=form-check-input type=checkbox value=Lunes id=checkLunes checked><label class=form-check-label for=checkLunes>L</label></div><div class="form-check form-check-inline"><input class=form-check-input type=checkbox value=Martes id=checkMartes checked><label class=form-check-label for=checkMartes>M</label></div><div class="form-check form-check-inline"><input class=form-check-input type=checkbox value=Miércoles id=checkMiercoles checked><label class=form-check-label for=checkMiercoles>X</label></div><div class="form-check form-check-inline"><input class=form-check-input type=checkbox value=Jueves id=checkJueves checked><label class=form-check-label for=checkJueves>J</label></div><div class="form-check form-check-inline"><input class=form-check-input type=checkbox value=Viernes id=checkViernes checked><label class=form-check-label for=checkViernes>V</label></div><div class="form-check form-check-inline"><input class=form-check-input type=checkbox value=Sábado id=checkSabado checked><label class=form-check-label for=checkSabado>S</label></div><div class="form-check form-check-inline"><input class=form-check-input type=checkbox value=Domingo id=checkDomingo checked><label class=form-check-label for=checkDomingo>D</label></div></div><div class="form-check mt-2"><input class=form-check-input type=checkbox id=excluir-domingos-prog><label class=form-check-label for=excluir-domingos-prog>Excluir Domingos</label></div></div></div><button type=submit class="btn btn-primary mt-4">Programar Intención</button>`}
 
+function injectFormHTML(){
+    document.getElementById("form-rapido").innerHTML=`<div class=row g-3><div class="col-md-6">
+    <label for=fecha-rapido class=form-label>Fecha de la Misa</label>
+    <input type=date class=form-control id=fecha-rapido required>
+    </div>
+    <div class="col-md-6">
+    <label for=hora-rapido class=form-label>Hora de la Misa</label>
+    <select id=hora-rapido class=form-select required></select></div>
+    <div class=col-12>
+    <label for=categoria-rapido class=form-label>Categoría</label>
+    <select id=categoria-rapido class=form-select required>
+    <option value="En Acción de Gracias">En Acción de Gracias</option>
+    <option value="Por la Salud de">Por la Salud de</option>
+    <option value="Por la Vida y la Salud">Por la Vida y la Salud</option>
+    <option value="Por el Alma de">Por el Alma de</option></select>
+    </div>
+    <div class=col-12>
+    <label for=intenciones-rapido class=form-label>Intenciones (una por línea)</label>
+    <textarea class=form-control id=intenciones-rapido rows=8 placeholder="Ej:\nJuan Pérez\nFamilia Gómez (Aniversario)"></textarea>
+    </div></div>
+    <button type=submit class="btn btn-primary mt-4">Guardar Intenciones</button>`,
+    
+    document.getElementById("form-programado").innerHTML=`<div class=row g-3>
+    <div class="col-md-6">
+    <label for=fecha-inicio-prog class=form-label>Desde la Fecha</label>
+    <input type=date class=form-control id=fecha-inicio-prog required></div>
+    <div class="col-md-6">
+    <label for=fecha-fin-prog class=form-label>Hasta la Fecha</label>
+    <input type=date class=form-control id=fecha-fin-prog required></div>
+    <div class="col-md-6"><label for=hora-prog class=form-label>Hora de la Misa</label>
+    <select id=hora-prog class=form-select required>
+    <option value=18:00>18:00 (Diaria)</option>
+    <option value=09:00>09:00 (Domingo)</option>
+    <option value=12:00>12:00 (Domingo)</option></select></div><div class="col-md-6">
+    <label for=categoria-prog class=form-label>Categoría</label>
+    <select id=categoria-prog class=form-select required>
+    <option value="En Acción de Gracias">En Acción de Gracias</option>
+    <option value="Por la Salud de">Por la Salud de</option>
+    <option value="Por la Vida y la Salud">Por la Vida y la Salud</option>
+    <option value="Por el Alma de">Por el Alma de</option></select></div>
+    <div class=col-12><label for=intencion-prog class=form-label>Intención (Nombre)</label>
+    <input type=text class=form-control id=intencion-prog required></div><div class=col-12>
+    <label for=nota-prog class=form-label>Nota (Opcional)</label>
+    <input type=text class=form-control id=nota-prog placeholder="Ej: (Aniversario)"></div>
+    <div class=col-12>
+    <label class=form-label>Seleccionar Días</label><div>
+    <div class="form-check form-check-inline">
+    <input class=form-check-input type=checkbox value=Lunes id=checkLunes checked><label class=form-check-label for=checkLunes>L</label>
+    </div><div class="form-check form-check-inline">
+    <input class=form-check-input type=checkbox value=Martes id=checkMartes checked><label class=form-check-label for=checkMartes>M</label></div>
+    <div class="form-check form-check-inline">
+    <input class=form-check-input type=checkbox value=Miércoles id=checkMiercoles checked><label class=form-check-label for=checkMiercoles>X</label></div>
+    <div class="form-check form-check-inline">
+    <input class=form-check-input type=checkbox value=Jueves id=checkJueves checked>
+    <label class=form-check-label for=checkJueves>J</label></div>
+    <div class="form-check form-check-inline">
+    <input class=form-check-input type=checkbox value=Viernes id=checkViernes checked><label class=form-check-label for=checkViernes>V</label>
+    </div>
+    <div class="form-check form-check-inline">
+    <input class=form-check-input type=checkbox value=Sábado id=checkSabado checked>
+    <label class=form-check-label for=checkSabado>S</label></div>
+    <div class="form-check form-check-inline">
+    <input class=form-check-input type=checkbox value=Domingo id=checkDomingo checked>
+    <label class=form-check-label for=checkDomingo>D</label></div></div><div class="form-check mt-2">
+    <input class=form-check-input type=checkbox id=excluir-domingos-prog>
+    <label class=form-check-label for=excluir-domingos-prog>Excluir Domingos</label>
+    </div></div></div><button type=submit class="btn btn-primary mt-4">Programar Intención</button>`
+}
 
+// =========================================================
+
+function handleDateClick(dateStr) {
+    mostrarLoader();
+    const formattedDate = new Date(dateStr + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('calendarDetailModalTitle').textContent = `Misas del ${formattedDate}`;
+
+    fetch(`${WEB_APP_URL}?action=getIntenciones&fecha=${dateStr}`)
+        .then(res => res.json())
+        .then(intenciones => {
+            ocultarLoader();
+            dayDataCache = { date: dateStr, intenciones: intenciones }; // Guardar datos en caché
+            
+            if (intenciones.length === 0) {
+                document.getElementById('calendarDetailModalBody').innerHTML = '<p class="text-center text-muted p-4">No hay misas con intenciones registradas para este día.</p>';
+            } else {
+                buildHorariosHTML(intenciones);
+            }
+            calendarDetailModalInstance.show();
+        })
+        .catch(handleFormError);
+}
+
+function buildHorariosHTML(intenciones) {
+    const uniqueHours = [...new Set(intenciones.map(i => i.horaMisa))].sort();
+    let html = '<p>Selecciona un horario para ver las intenciones:</p><div class="row">';
+
+    uniqueHours.forEach(hour => {
+        const intencionesCount = intenciones.filter(i => i.horaMisa === hour).length;
+        html += `
+            <div class="col-md-6">
+                <div class="horario-card" data-hour="${hour}">
+                    <div class="horario-time">${hour}</div>
+                    <small>${intencionesCount} ${intencionesCount === 1 ? 'intención' : 'intenciones'}</small>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    document.getElementById('calendarDetailModalBody').innerHTML = html;
+}
+
+function showIntencionesForHour(hour) {
+    const { date, intenciones } = dayDataCache;
+    const intencionesFiltradas = intenciones.filter(i => i.horaMisa === hour);
+    const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+
+    document.getElementById('calendarDetailModalTitle').textContent = `Intenciones - ${formattedDate} - ${hour}`;
+    
+    let html = `
+        <button id="modal-back-button" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a los horarios
+        </button>
+        <ul class="list-group list-group-flush">
+    `;
+
+    intencionesFiltradas.forEach(i => {
+        html += `<li class="list-group-item"><strong>${i.intencion}</strong> ${i.nota || ''} <br><small class="text-muted">${i.categoria}</small></li>`;
+    });
+
+    html += '</ul>';
+    document.getElementById('calendarDetailModalBody').innerHTML = html;
+}
+
+function setupCalendarModalListeners() {
+    const modalBody = document.getElementById('calendarDetailModalBody');
+    modalBody.addEventListener('click', function(e) {
+        const horarioCard = e.target.closest('.horario-card');
+        const backButton = e.target.closest('#modal-back-button');
+
+        if (horarioCard) {
+            showIntencionesForHour(horarioCard.dataset.hour);
+        }
+
+        if (backButton) {
+            const { date, intenciones } = dayDataCache;
+            const formattedDate = new Date(date + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('calendarDetailModalTitle').textContent = `Misas del ${formattedDate}`;
+            buildHorariosHTML(intenciones);
+        }
+    });
+}
+
+// =========================================================
 function fetchDashboardStats(){fetch(`${WEB_APP_URL}?action=getDashboardStats`).then(e=>e.json()).then(e=>{document.getElementById("stat-today").textContent=e.intencionesHoy,document.getElementById("stat-week").textContent=e.intencionesSemana}).catch(e=>console.error("Error fetching stats:",e))}
 function fetchRecentIntenciones(){const e=document.querySelector("#recent-intenciones-table tbody");fetch(`${WEB_APP_URL}?action=getRecentIntenciones`).then(e=>e.json()).then(t=>{if(e.innerHTML="",!t||0===t.length)return void(e.innerHTML='<tr><td colspan="3" class="text-center p-4">No hay registros recientes.</td></tr>');t.forEach(t=>{const n=`<tr><td><strong>${t.intencion}</strong> ${t.nota||""}</td><td>${t.categoria}</td><td>${t.fechaMisa}</td></tr>`;e.innerHTML+=n})}).catch(t=>{console.error("Error fetching recents:",t),e.innerHTML='<tr><td colspan="3" class="text-center text-danger p-4">Error al cargar registros.</td></tr>'})}
 function actualizarHorasMisa(e,t){const n=document.getElementById(t);n.innerHTML="",e&&fetch(`${WEB_APP_URL}?action=getHorasMisa&fecha=${e}`).then(e=>e.json()).then(e=>{e.forEach(e=>{const o=document.createElement("option");o.value=e,o.textContent=e,n.appendChild(o)})}).catch(e=>mostrarAlerta("Error al cargar horas: "+e,"danger"))}
-
-
-// =========================================================
 
 function handleEditClick(rowId) {
     const intencion = currentIntenciones.find(i => i.row == rowId);
@@ -99,6 +260,48 @@ function handleEditClick(rowId) {
         document.getElementById('editCategoria').value = intencion.categoria;
         editModalInstance.show();
     }
+}
+
+// --- FUNCIONES DE RESPUESTA Y UTILIDADES ---
+function handleDeleteClick(rowId, groupId = null) {
+    if (groupId) {
+        // Es una intención programada, abrimos el modal de decisión
+        const deleteSingleBtn = document.getElementById('deleteSingleBtn');
+        const deleteAllBtn = document.getElementById('deleteAllBtn');
+        
+        // Pasamos los IDs a los botones del modal para que sepan qué hacer
+        deleteSingleBtn.dataset.row = rowId;
+        deleteAllBtn.dataset.groupid = groupId;
+        
+        deleteGroupModalInstance.show();
+    } else {
+        // Es una intención normal, usamos la confirmación simple
+        if (confirm('¿Estás seguro de que deseas eliminar esta intención?')) {
+            performDelete(rowId);
+        }
+    }
+}
+
+function handleDeleteGroupClick(groupId) {
+    if (confirm('¿Estás seguro de que deseas eliminar TODA la serie programada? Esta acción no se puede deshacer.')) {
+        deleteGroupModalInstance.hide();
+        mostrarLoader();
+        const payload = { action: 'deleteProgrammedGroup', data: { groupId } };
+        fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
+            .then(res => res.json())
+            .then(handleApiResponse)
+            .catch(handleFormError);
+    }
+}
+
+function performDelete(rowId) {
+    deleteGroupModalInstance.hide();
+    mostrarLoader();
+    const payload = { action: 'deleteIntencion', data: { row: rowId } };
+    fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .then(res => res.json())
+        .then(handleApiResponse)
+        .catch(handleFormError);
 }
 
 function saveEditChanges() {
@@ -130,7 +333,6 @@ function saveEditChanges() {
             handleFormError(err);
         });
 }
-
 
 // --- EVENT LISTENERS PARA FORMULARIOS Y ACCIONES ---
 
@@ -241,49 +443,6 @@ function consultarIntenciones() {
         });
 }
 
-
-// --- FUNCIONES DE RESPUESTA Y UTILIDADES ---
-function handleDeleteClick(rowId, groupId = null) {
-    if (groupId) {
-        // Es una intención programada, abrimos el modal de decisión
-        const deleteSingleBtn = document.getElementById('deleteSingleBtn');
-        const deleteAllBtn = document.getElementById('deleteAllBtn');
-        
-        // Pasamos los IDs a los botones del modal para que sepan qué hacer
-        deleteSingleBtn.dataset.row = rowId;
-        deleteAllBtn.dataset.groupid = groupId;
-        
-        deleteGroupModalInstance.show();
-    } else {
-        // Es una intención normal, usamos la confirmación simple
-        if (confirm('¿Estás seguro de que deseas eliminar esta intención?')) {
-            performDelete(rowId);
-        }
-    }
-}
-
-function handleDeleteGroupClick(groupId) {
-    if (confirm('¿Estás seguro de que deseas eliminar TODA la serie programada? Esta acción no se puede deshacer.')) {
-        deleteGroupModalInstance.hide();
-        mostrarLoader();
-        const payload = { action: 'deleteProgrammedGroup', data: { groupId } };
-        fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
-            .then(res => res.json())
-            .then(handleApiResponse)
-            .catch(handleFormError);
-    }
-}
-
-function performDelete(rowId) {
-    deleteGroupModalInstance.hide();
-    mostrarLoader();
-    const payload = { action: 'deleteIntencion', data: { row: rowId } };
-    fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify(payload) })
-        .then(res => res.json())
-        .then(handleApiResponse)
-        .catch(handleFormError);
-}
-
 function handleApiResponse(response) {
     ocultarLoader();
     if (response.status === 'ok') {
@@ -305,5 +464,7 @@ function handleFormResponse(response) {
 }
 
 function handleFormError(e){ocultarLoader(),mostrarAlerta("Error de conexión. Revisa tu conexión a internet.","danger"),console.error("Fetch Error:",e)}
-const loader=document.getElementById("loader");function mostrarLoader(){loader.classList.remove("d-none")}function ocultarLoader(){loader.classList.add("d-none")}
+const loader=document.getElementById("loader");
+function mostrarLoader(){loader.classList.remove("d-none")}
+function ocultarLoader(){loader.classList.add("d-none")}
 function mostrarAlerta(e,t="success"){const n=document.querySelector("body"),o=document.createElement("div");o.style.position="fixed",o.style.top="20px",o.style.right="20px",o.style.zIndex="1050",o.className=`alert alert-${t} alert-dismissible fade show shadow-lg`,o.innerHTML=`${e}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`,n.appendChild(o),setTimeout(()=>{const e=bootstrap.Alert.getOrCreateInstance(o);e&&e.close()},5e3)}
